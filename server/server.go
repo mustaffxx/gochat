@@ -32,12 +32,10 @@ func main() {
 		}
 
 		client := Client{
-			id:       c.RemoteAddr().String(),
+			id:       c.LocalAddr().String(),
 			conn:     c,
 			messages: make(chan string),
 		}
-
-		log.Printf("client %s connected", client.id)
 
 		clientMap.Store(client.id, client)
 
@@ -67,7 +65,7 @@ func handleClient(client *Client, clientMap *sync.Map) {
 		log.Printf("client [%s]: %s", client.id, message)
 
 		clientMap.Range(func(key, value interface{}) bool {
-			otherClient := value.(Client)
+			otherClient := value.(*Client)
 
 			if client.id != otherClient.id {
 				otherClient.messages <- message
@@ -92,8 +90,6 @@ func dispatchMessage(client *Client) {
 }
 
 func disconnectClient(client *Client, clientMap *sync.Map) {
-	log.Printf("client %s disconnected", client.id)
-
 	close(client.messages)
 
 	clientMap.Delete(client.id)
