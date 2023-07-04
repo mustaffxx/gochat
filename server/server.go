@@ -67,8 +67,8 @@ func handleClient(client *Client, clientMap *sync.Map) {
 			}
 		}
 
-		message := string(buffer[:n])
-		log.Printf("client [%s]: %s", client.id, message)
+		message := client.id + ": " + string(buffer[:n])
+		log.Printf("client [%s] %s", client.conn.RemoteAddr().String(), message)
 
 		clientMap.Range(func(key, value interface{}) bool {
 			otherClient := value.(Client)
