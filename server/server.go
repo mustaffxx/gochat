@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
 )
 
 type Client struct {
@@ -68,10 +69,7 @@ func handleClient(client *Client, clientMap *sync.Map) {
 
 		clientMap.Range(func(key, value interface{}) bool {
 			otherClient := value.(Client)
-
-			if client.id != otherClient.id {
-				otherClient.messages <- message
-			}
+			otherClient.messages <- message
 
 			return true
 		})
@@ -80,6 +78,8 @@ func handleClient(client *Client, clientMap *sync.Map) {
 
 func dispatchMessage(client *Client) {
 	for message := range client.messages {
+		timestamp := "[" + time.Now().Format("02/01/2006 15:04:05") + "]"
+		message = timestamp + " " + message
 		_, err := client.conn.Write([]byte(message))
 		if err != nil {
 			log.Printf("Error sending message to client %s: %s", client.id, err)
