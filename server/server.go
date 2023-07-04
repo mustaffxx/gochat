@@ -6,6 +6,8 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Client struct {
@@ -32,8 +34,9 @@ func main() {
 			continue
 		}
 
+		uid := generateUniqueName(&clientMap)
 		client := Client{
-			id:       c.RemoteAddr().String(),
+			id:       uid,
 			conn:     c,
 			messages: make(chan string),
 		}
@@ -102,4 +105,20 @@ func disconnectClient(client *Client, clientMap *sync.Map) {
 	if err != nil {
 		log.Printf("Error while closing client %s: %s", client.id, err)
 	}
+}
+
+func generateUniqueName(clientMap *sync.Map) string {
+	var uid string
+
+	for {
+		uid = uuid.New().String()[:8]
+
+		_, exists := clientMap.Load(uid)
+
+		if !exists {
+			break
+		}
+	}
+
+	return uid
 }
