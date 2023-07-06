@@ -70,7 +70,7 @@ func handleClient(client *Client, clientMap *sync.Map) {
 		message := client.id + ": " + string(buffer[:n])
 		log.Printf("client [%s] %s", client.conn.RemoteAddr().String(), message)
 
-		appendMessage(message, clientMap)
+		appendMessage(message, client, clientMap)
 	}
 }
 
@@ -89,9 +89,13 @@ func dispatchMessage(client *Client) {
 	}
 }
 
-func appendMessage(message string, clientMap *sync.Map) {
+func appendMessage(message string, selfClient *Client, clientMap *sync.Map) {
 	clientMap.Range(func(key, value interface{}) bool {
 		otherClient := value.(Client)
+		if selfClient.id == otherClient.id {
+			return true
+		}
+
 		otherClient.messages <- message
 
 		return true
@@ -110,7 +114,7 @@ func disconnectClient(client *Client, clientMap *sync.Map) {
 		log.Printf("Error while closing client %s: %s", client.id, err)
 	}
 
-	appendMessage("client "+client.id+" disconnected\n", clientMap)
+	appendMessage("client "+client.id+" disconnected\n", client, clientMap)
 }
 
 func generateUniqueName(clientMap *sync.Map) string {
