@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/eiannone/keyboard"
 )
@@ -141,6 +142,10 @@ func buildConsole(client *Client) {
 			if err != nil {
 				log.Fatalf("Error writing message to server: %s", err)
 			}
+
+			timestamp := "[" + time.Now().Format("02/01/2006 15:04:05") + "]"
+			selfMessage := timestamp + " me: " + userBuffer
+			serverMessages = append(serverMessages, selfMessage)
 
 			userBuffer = ""
 			send = false
