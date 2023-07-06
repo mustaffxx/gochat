@@ -85,8 +85,8 @@ func handleKeyboard(client *Client) {
 			client.char <- 13
 		} else if key == keyboard.KeySpace {
 			client.char <- 32
-		} else if key == keyboard.KeyEsc {
-			log.Fatalf("Program closed by ESC")
+		} else if key == keyboard.KeyCtrlC {
+			log.Fatalf("\nProgram closed by interrupt signal")
 		} else {
 			client.char <- char
 		}
@@ -98,6 +98,10 @@ func buildConsole(client *Client) {
 	userBuffer := ""
 
 	send := false
+
+	clearConsole()
+	fmt.Print("\n---------------\n")
+	fmt.Print("Your message: " + userBuffer)
 
 	for {
 		select {
