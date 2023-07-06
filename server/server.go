@@ -5,6 +5,9 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type Client struct {
@@ -31,11 +34,14 @@ func main() {
 			continue
 		}
 
+		uid := generateUniqueName(&clientMap)
 		client := Client{
-			id:       c.LocalAddr().String(),
+			id:       uid,
 			conn:     c,
 			messages: make(chan string),
 		}
+
+		log.Printf("client %s connected", client.id)
 
 		clientMap.Store(client.id, client)
 
@@ -61,23 +67,17 @@ func handleClient(client *Client, clientMap *sync.Map) {
 			}
 		}
 
-		message := string(buffer[:n])
-		log.Printf("client [%s]: %s", client.id, message)
+		message := client.id + ": " + string(buffer[:n])
+		log.Printf("client [%s] %s", client.conn.RemoteAddr().String(), message)
 
-		clientMap.Range(func(key, value interface{}) bool {
-			otherClient := value.(*Client)
-
-			if client.id != otherClient.id {
-				otherClient.messages <- message
-			}
-
-			return true
-		})
+		appendMessage(message, clientMap)
 	}
 }
 
 func dispatchMessage(client *Client) {
 	for message := range client.messages {
+		timestamp := "[" + time.Now().Format("02/01/2006 15:04:05") + "]"
+		message = timestamp + " " + message
 		_, err := client.conn.Write([]byte(message))
 		if err != nil {
 			log.Printf("Error sending message to client %s: %s", client.id, err)
@@ -89,7 +89,18 @@ func dispatchMessage(client *Client) {
 	}
 }
 
+func appendMessage(message string, clientMap *sync.Map) {
+	clientMap.Range(func(key, value interface{}) bool {
+		otherClient := value.(Client)
+		otherClient.messages <- message
+
+		return true
+	})
+}
+
 func disconnectClient(client *Client, clientMap *sync.Map) {
+	log.Printf("client %s disconnected", client.id)
+
 	close(client.messages)
 
 	clientMap.Delete(client.id)
@@ -98,4 +109,22 @@ func disconnectClient(client *Client, clientMap *sync.Map) {
 	if err != nil {
 		log.Printf("Error while closing client %s: %s", client.id, err)
 	}
+
+	appendMessage("client "+client.id+" disconnected\n", clientMap)
+}
+
+func generateUniqueName(clientMap *sync.Map) string {
+	var uid string
+
+	for {
+		uid = uuid.New().String()[:8]
+
+		_, exists := clientMap.Load(uid)
+
+		if !exists {
+			break
+		}
+	}
+
+	return uid
 }
