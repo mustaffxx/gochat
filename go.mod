@@ -1,4 +1,4 @@
-module github.com/mustaffxx/letsgochat
+module github.com/mustaffxx/gochat
 
 go 1.20
 
